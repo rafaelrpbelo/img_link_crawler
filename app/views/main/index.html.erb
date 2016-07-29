@@ -1,0 +1,80 @@
+<h1>Search Images by Link</h1>
+
+<%= form_for :images do |f| %>
+  <%= f.label :image %>
+  <%= f.text_field :image_link, style: "width: 400px;", onblur: 'putImagesIntoTheBox();' %>
+  <!-- <button onclick="putImagesIntoTheBox();"></button> -->
+
+  <br />
+  <div id="search-images-result" style="border: 1px solid red; height: 300px; width: 500px;"></div>
+  <%= f.label :link %>
+  <%= f.text_field :link_img, style: "width: 100%;" %>
+  <div id='favicon'></div>
+<% end %>
+
+<script>
+var box = document.getElementById("search-images-result");
+var inputLink = document.getElementById("images_image_link");
+var finalLink = document.getElementById("images_link_img");
+var faviconDisplay = document.getElementById("favicon");
+
+function searchRequest(callback){
+  var request = new XMLHttpRequest();
+  var path = "/search_image_by_link?query=" + encodeURI(inputLink.value);
+
+  request.onreadystatechange = function() {
+    if (request.readyState == XMLHttpRequest.DONE ) {
+      if(request.status == 200){
+        callback(request);
+      }
+      else if(request.status == 400) {
+        alert('There was an error 400')
+      }
+      else {
+         alert('something else other than 200 was returned')
+      }
+    }
+  };
+
+  request.open("GET", path, true);
+  request.send();
+}
+
+function clearBox(){
+  while(box.firstChild){ box.removeChild(box.firstChild) }
+};
+
+function setLink(){
+  finalLink.value = this.src;
+};
+
+function createImageElement(source){
+  var element = document.createElement("img");
+  element.setAttribute('src', source);
+  element.setAttribute('height', '50px');
+  element.setAttribute('width', '50px');
+  element.setAttribute('padding', '5px');
+  element.addEventListener('click', setLink);
+  return element;
+};
+
+function setFavicon(url){
+  var origin = new URL(url).origin;
+  var faviconLink = origin + "/favicon.ico";
+  faviconDisplay.appendChild(createImageElement(faviconLink));
+}
+
+function putImagesIntoTheBox(){
+  clearBox();
+  searchRequest(function(response){
+    var links = JSON.parse(response.response).results;
+    setFavicon(response.responseURL);
+
+    if(links.length > 0){
+      for(link in links){
+        box.appendChild(createImageElement(links[link]));
+      }
+    }
+  });
+}
+</script>
